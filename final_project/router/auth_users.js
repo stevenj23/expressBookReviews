@@ -20,7 +20,6 @@ const authenticatedUser = (username,password)=>{ //returns boolean
 //only registered users can login
 regd_users.post("/login", (req,res) => {
   //Write your code here
-//   return res.status(300).json({message: "Yet to be implemented"});
 
     const { username, password } = req.body;
 
@@ -61,9 +60,7 @@ regd_users.post("/login", (req,res) => {
 
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
-  //Write your code here
-//   return res.status(300).json({message: "Yet to be implemented"});
-
+  
     const isbn = req.params.isbn;
     const review = req.query.review;
 
@@ -102,6 +99,32 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
     });
 
 });
+
+// Delete a book review
+regd_users.delete("/auth/review/:isbn", (req, res) => {
+
+    const isbn = req.params.isbn;
+    const username = req.session.authorization.username;
+  
+    // Check if book exists
+    if (!books[isbn]) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+  
+    // Check if review exists for this user
+    if (!books[isbn].reviews || !books[isbn].reviews[username]) {
+      return res.status(404).json({ message: "No review found for this user" });
+    }
+  
+    // Delete the review
+    delete books[isbn].reviews[username];
+  
+    return res.status(200).json({
+      message: "Review deleted successfully",
+      reviews: books[isbn].reviews
+    });
+  });
+
 
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;
