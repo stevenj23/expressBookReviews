@@ -33,12 +33,14 @@ public_users.post("/register", (req,res) => {
 });
 
 // Get the book list available in the shop
+//Task 10: Add async to the following line
 public_users.get('/',async function (req, res) {
   //Write your code here
     return res.send(JSON.stringify({books}, null, 4));
 });
 
 // Get book details based on ISBN
+//Task 11: add asyn to the following line
 public_users.get('/isbn/:isbn',async function (req, res) {
   //Write your code here
 
@@ -53,6 +55,7 @@ public_users.get('/isbn/:isbn',async function (req, res) {
  });
   
 // Get book details based on author
+// Task 12: add async
 public_users.get('/author/:author', async function (req, res) {
   //Write your code here
     const author = req.params.author;
@@ -65,6 +68,7 @@ public_users.get('/author/:author', async function (req, res) {
 });
 
 // Get all books based on title
+// Task 13: add async to the following line
 public_users.get('/title/:title', async function (req, res) {
   //Write your code here
     
