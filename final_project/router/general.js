@@ -33,67 +33,147 @@ public_users.post("/register", (req,res) => {
 });
 
 // Get the book list available in the shop
-//Task 10: Add async to the following line
+//Task 10:
 public_users.get('/',async function (req, res) {
   //Write your code here
-    return res.send(JSON.stringify({books}, null, 4));
+    
+    try {
+        return res.send(JSON.stringify({books}, null, 4));
+    } catch (error) {
+        return res.status(500).json({
+            message: "Error fetching books",
+            error: error.message
+        });
+    }
 });
 
 // Get book details based on ISBN
-//Task 11: add asyn to the following line
+//Task 11:
 public_users.get('/isbn/:isbn',async function (req, res) {
   //Write your code here
+    try {
+        const isbn = req.params.isbn;
 
-   const isbn = req.params.isbn;
+        // Direct lookup using key
+        const book = books[isbn];
 
-   const filteredBooks = Object.values(books).filter(
-   book => book.isbn === isbn
-   );
+        // ✅ Proper error handling
+        if (!book) {
+            return res.status(404).json({
+                message: `No book found with ISBN: ${isbn}`
+            });
+        }
 
-   return res.status(200).json(filteredBooks); 
+        // ✅ Return book with isbn included (optional but better API design)
+        return res.status(200).json({
+            isbn: isbn,
+            ...book
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            message: "Error retrieving book",
+            error: error.message
+        });
+    }
 
  });
   
 // Get book details based on author
-// Task 12: add async
+// Task 12:
 public_users.get('/author/:author', async function (req, res) {
-  //Write your code here
-    const author = req.params.author;
+    try {
+        const author = req.params.author;
 
-    const filteredBooks = Object.values(books).filter(
-    book => book.author === author
-    );
+        // Case-insensitive filtering
+        const filteredBooks = Object.entries(books)
+            .filter(([isbn, book]) =>
+                book.author.toLowerCase() === author.toLowerCase()
+            )
+            .map(([isbn, book]) => ({
+                isbn,
+                ...book
+            }));
 
-    return res.status(200).json(filteredBooks);
+        // ✅ Handle "not found"
+        if (filteredBooks.length === 0) {
+            return res.status(404).json({
+                message: `No books found for author: ${author}`
+            });
+        }
+
+        // ✅ Return structured response
+        return res.status(200).json(filteredBooks);
+
+    } catch (error) {
+        return res.status(500).json({
+            message: "Error retrieving books by author",
+            error: error.message
+        });
+    }
 });
 
 // Get all books based on title
-// Task 13: add async to the following line
+// Task 13: 
 public_users.get('/title/:title', async function (req, res) {
-  //Write your code here
-    
-    const title = req.params.title;
+    try {
+        const title = req.params.title;
 
-    const filteredBooks = Object.values(books).filter(
-    book => book.title === title
-    );
+        // Case-insensitive filtering + keep ISBN
+        const filteredBooks = Object.entries(books)
+            .filter(([isbn, book]) =>
+                book.title.toLowerCase() === title.toLowerCase()
+            )
+            .map(([isbn, book]) => ({
+                isbn,
+                ...book
+            }));
 
-    return res.status(200).json(filteredBooks); 
+        // ✅ Handle "not found"
+        if (filteredBooks.length === 0) {
+            return res.status(404).json({
+                message: `No books found with title: ${title}`
+            });
+        }
 
+        // ✅ Return structured response
+        return res.status(200).json(filteredBooks);
+
+    } catch (error) {
+        return res.status(500).json({
+            message: "Error retrieving books by title",
+            error: error.message
+        });
+    }
 });
 
 //  Get book review
-public_users.get('/review/:isbn',function (req, res) {
-  //Write your code here
+public_users.get('/review/:isbn', function (req, res) {
+    try {
+        const isbn = req.params.isbn;
 
-    const isbn = req.params.isbn;
+        // Direct lookup (ISBN is the key)
+        const book = books[isbn];
 
-    const filteredBooks = Object.values(books).filter(
-    book => book.isbn === isbn
-    );
+        // ✅ Handle "book not found"
+        if (!book) {
+            return res.status(404).json({
+                message: `No book found with ISBN: ${isbn}`
+            });
+        }
 
-    return res.status(200).json(filteredBooks); 
+        // ✅ Return only reviews (as intended)
+        return res.status(200).json({
+            isbn,
+            reviews: book.reviews
+        });
 
+    } catch (error) {
+        return res.status(500).json({
+            message: "Error retrieving book reviews",
+            error: error.message
+        });
+    }
 });
 
 module.exports.general = public_users;
