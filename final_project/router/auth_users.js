@@ -18,56 +18,50 @@ const authenticatedUser = (username,password)=>{ //returns boolean
 }
 
 //only registered users can login
-regd_users.post("/login", (req,res) => {
-  //Write your code here
+regd_users.post("/login", (req, res) => {
 
     const { username, password } = req.body;
 
     // Validate input
     if (!username || !password) {
-    return res.status(400).json({ message: "Username and password required" });
+        return res.status(400).json({ message: "Username and password required" });
     }
 
     // Check if user exists
     if (!isValid(username)) {
-    return res.status(404).json({ message: "User does not exist" });
+        return res.status(404).json({ message: "User does not exist" });
     }
 
     // Authenticate user
     if (!authenticatedUser(username, password)) {
-    return res.status(401).json({ message: "Invalid credentials" });
+        return res.status(401).json({ message: "Invalid credentials" });
     }
 
     // Generate JWT token
-    const token = jwt.sign(
-    { username: username },   // payload
-    "access",                 // secret key (can be any string)
-    { expiresIn: "1h" }       // optional expiry
+    const accessToken = jwt.sign(
+        { username: username },
+        "access",
+        { expiresIn: "1h" }
     );
 
-    // Save token in session
+    // Store in session
     req.session.authorization = {
-        username: username,
-        accessToken: token
+        accessToken,
+        username
     };
 
+    // ✅ EXACT expected output
     return res.status(200).json({
-    message: "User successfully logged in",
-    token: token
+        message: "Login successful!"
     });
-
-
 });
-
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
     try {
         const isbn = req.params.isbn;
+        const review = req.body.review;   // ✅ ONLY use body
 
-        // Prefer body over query (but support both for flexibility)
-        const review = req.body.review || req.query.review;
-
-        // ✅ Validate session/user
+        // Validate session
         const username = req.session?.authorization?.username;
         if (!username) {
             return res.status(401).json({
@@ -75,58 +69,49 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
             });
         }
 
-        // ✅ Validate review input
+        // Validate review
         if (!review || review.trim() === "") {
             return res.status(400).json({
                 message: "Review cannot be empty"
             });
         }
 
-        // ✅ Check if book exists
+        // Check book
         const book = books[isbn];
         if (!book) {
             return res.status(404).json({
-                message: `Book not found with ISBN: ${isbn}`
+                message: "Book not found"
             });
         }
 
-        // ✅ Ensure reviews object exists
+        // Ensure reviews object exists
         if (!book.reviews) {
             book.reviews = {};
         }
 
-        // ✅ Check if user already reviewed
-        const isUpdate = Object.prototype.hasOwnProperty.call(book.reviews, username);
+        // Add / update review (simple format expected)
+        book.reviews[username] = review.trim();
 
-        // ✅ Add or update review
-        book.reviews[username] = {
-            review: review.trim(),
-            updatedAt: new Date().toISOString()
-        };
-
+        // ✅ EXACT expected output
         return res.status(200).json({
-            message: isUpdate
-                ? "Review updated successfully"
-                : "Review added successfully",
-            isbn,
-            user: username,
+            message: "Review added successfully",
             reviews: book.reviews
         });
 
     } catch (error) {
         return res.status(500).json({
-            message: "Error adding/updating review",
-            error: error.message
+            message: "Error adding review"
         });
     }
 });
 
 // Delete a book review
+// Delete a book review
 regd_users.delete("/auth/review/:isbn", (req, res) => {
     try {
         const isbn = req.params.isbn;
 
-        // ✅ Validate session/user
+        // Validate session
         const username = req.session?.authorization?.username;
         if (!username) {
             return res.status(401).json({
@@ -134,42 +119,32 @@ regd_users.delete("/auth/review/:isbn", (req, res) => {
             });
         }
 
-        // ✅ Check if book exists
+        // Check book
         const book = books[isbn];
         if (!book) {
             return res.status(404).json({
-                message: `Book not found with ISBN: ${isbn}`
+                message: "Book not found"
             });
         }
 
-        // ✅ Check if reviews exist
-        if (!book.reviews || Object.keys(book.reviews).length === 0) {
+        // Check user review exists
+        if (!book.reviews || !book.reviews[username]) {
             return res.status(404).json({
-                message: "No reviews available for this book"
+                message: "No review found"
             });
         }
 
-        // ✅ Check if user has a review
-        if (!Object.prototype.hasOwnProperty.call(book.reviews, username)) {
-            return res.status(404).json({
-                message: "No review found for this user"
-            });
-        }
-
-        // ✅ Delete review
+        // Delete review
         delete book.reviews[username];
 
+        // ✅ EXACT expected format
         return res.status(200).json({
-            message: "Review deleted successfully",
-            isbn,
-            user: username,
-            reviews: book.reviews
+            message: `Review for ISBN ${isbn} deleted`
         });
 
     } catch (error) {
         return res.status(500).json({
-            message: "Error deleting review",
-            error: error.message
+            message: "Error deleting review"
         });
     }
 });
